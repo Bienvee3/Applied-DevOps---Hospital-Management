@@ -249,347 +249,257 @@ Backlog refinement is continuous rather than a rigid calendar event. Refinement 
 
 ## 6. Task decomposition and dependencies
 
-Task decomposition bridges user-facing requirements and engineering execution. While an epic groups themes and a user story captures deliverable user value, a **task represents the atomic unit of engineering change** made to the codebase.
+### 6.1 Epics and Story Allocation
 
-### 6.1 The Four Criteria of an Engineering Task
+The scenario is grouped into six epics. E6 represents the engineering and delivery pipeline, treated as first-class backlog work:
 
-Every task defined in this project satisfies four rigorous constraints before entering execution:
-1. **One Branch:** It maps directly to an isolated Git feature branch (e.g., `feature/US-05-conflict-rule`) that can be merged independently via Pull Request without breaking the build.
-2. **One Sitting:** It represents work scoped to a single focused development session (2 to 4 hours), never multi-day efforts.
-3. **One Clear End:** Its completion is verifiable via an objective condition (e.g., a passing test or schema migration), avoiding vague assertions like "working".
-4. **One Owner & Change:** It specifies a concrete code change to the repository rather than a vague area of concern (e.g., "T-05.3 reject clashing appointment", never "improve appointment logic").
-
----
-
-### 6.2 Epic Mapping
-
-The complete scenario is partitioned into six core epics. Crucially, **E6 (Platform and Pipeline)** is treated as first-class backlog work rather than an administrative afterthought:
-
-| Epic ID | Epic Name | Scope & Domain Boundary |
-| :---: | :--- | :--- |
-| **E1** | **Authentication and access** | User credential model, session/token management, and RBAC route guards across all HTTP endpoints. |
-| **E2** | **Patient management** | Patient registration, search, profile updates, and compliant soft-deactivation. |
-| **E3** | **Doctor management** | Doctor registry, clinical specialisation, availability windows, and status deactivation. |
-| **E4** | **Appointment scheduling** | Appointment booking calendar, schedule queries, status lifecycle, and conflict-prevention business rules. |
-| **E5** | **Medical records and export** | Post-consultation diagnosis entry, clinical notes, patient medical histories, and role-authorized CSV export. |
-| **E6** | **Platform and pipeline** | Docker containerisation, GitHub Actions CI workflows, GHCR registry publishing, Playwright E2E tests, and health monitoring. |
-
----
-
-### 6.3 Detailed Decomposition of Top Backlog Stories
-
-The top eight user stories and the platform epic are decomposed below into discrete development, automated testing, and manual verification tasks.
-
-#### US-01: Authentication & Role-Based Access Control
-*As any staff member, I want to log in with my username and password, so that I can securely reach only the functionality permitted by my role.*
-- **Story Dependencies:** None (Foundation of the application).
-
-| Task ID | Task Description | Kind | Depends on | Branch Identifier |
-| :--- | :--- | :---: | :---: | :--- |
-| **T-01.1** | Create user entity schema, bcrypt password hashing migration, and seed admin user | Code | None | `feature/US-01-user-schema` |
-| **T-01.2** | Implement authentication service validating credentials and issuing session cookies/tokens | Code | T-01.1 | `feature/US-01-auth-service` |
-| **T-01.3** | Build role-based authorization middleware enforcing HTTP 401 and 403 on protected routes | Code | T-01.2 | `feature/US-01-rbac-middleware` |
-| **T-01.4** | Create responsive login UI form with role-dependent post-login redirect | Code | T-01.2 | `feature/US-01-login-ui` |
-| **T-01.5** | Automated unit tests for bcrypt password verification and invalid credential rejection | Test — automated | T-01.2 | `feature/US-01-auth-unit-tests` |
-| **T-01.6** | Automated route integration tests verifying 401 (unauthenticated) and 403 (unauthorized role) responses | Test — automated | T-01.3 | `feature/US-01-rbac-route-tests` |
-| **T-01.7** | Manual validation of login error notification banners and session expiration behavior | Test — manual | T-01.4 | — |
+- **E1 Authentication and access:** Login, sessions, role enforcement across every route.
+  - `US-01` (Authentication & Access)
+  - `US-10` (Manage User Accounts & Roles)
+  - `US-18` (Deactivate User Accounts)
+  - `US-21` (User Security Audit Trail)
+- **E2 Patient management:** Register, search, view, edit, deactivate.
+  - `US-03` (Register New Patient — Anchor)
+  - `US-04` (Search Existing Patient)
+  - `US-09` (Edit Patient Details)
+  - `US-17` (Deactivate Patient Record)
+- **E3 Doctor management:** Register, update, deactivate, specialisation and availability.
+  - `US-02` (Register Doctor)
+  - `US-15` (Update Doctor Information)
+  - `US-16` (Deactivate Doctor Record)
+- **E4 Appointment scheduling:** Create, view, update, cancel, and the no-double-booking rule.
+  - `US-05` (Schedule Appointment with Double-Booking Prevention)
+  - `US-11` (View Doctor Queue)
+  - `US-12` (Doctor Appointment Cancellation)
+  - `US-13` (Update or Cancel Appointment)
+  - `US-14` (Track Appointment Status)
+  - `US-19` (Daily Schedule Filtering)
+- **E5 Medical records and export:** Visit notes, diagnosis, history, CSV export.
+  - `US-06` (Record Diagnosis and Visit Notes)
+  - `US-07` (Review Patient Medical History)
+  - `US-08` (Export Clinical Data to CSV)
+  - `US-20` (Diagnosis Search & Filter)
+- **E6 Platform and pipeline:** Containerisation, CI, CD, tests, monitoring.
+  - `CI-Setup` (Automated build, test and linting pipeline)
+  - `CD-Publish` (Container build and GHCR publishing)
+  - `E2E-Tests` (Playwright automated workflow execution)
+  - `Metrics` (Health check endpoint and runtime observability)
 
 ---
 
-#### US-02: Register Doctor with Specialisation
-*As an administrator, I want to register a doctor with their medical specialisation and schedule, so that they can be assigned to clinical consultations.*
-- **Story Dependencies:** Blocked by `US-01` (Requires administrative authentication context).
+### 6.2 Task Decomposition for Top Stories
 
-| Task ID | Task Description | Kind | Depends on | Branch Identifier |
-| :--- | :--- | :---: | :---: | :--- |
-| **T-02.1** | Define doctor database entity and migration (name, specialization, availability, active flag) | Code | T-01.1 | `feature/US-02-doctor-entity` |
-| **T-02.2** | Implement doctor service repository method for creating doctors | Code | T-02.1 | `feature/US-02-doctor-service` |
-| **T-02.3** | Build administrator doctor registration form with specialisation selection | Code | T-02.2, T-01.3 | `feature/US-02-doctor-form` |
-| **T-02.4** | Automated unit and API tests validating mandatory doctor fields and admin-only route restriction | Test — automated | T-02.3 | `feature/US-02-doctor-tests` |
-| **T-02.5** | Manual verification of doctor registration validation feedback and form reset | Test — manual | T-02.3 | — |
+#### US-01: As any staff member, I want to log in, so that I reach only the functionality my role permits
+- **Blocked by:** None
 
----
-
-#### US-03: Register New Patient (Baseline Anchor)
-*As a receptionist, I want to register a new patient with their name, date of birth, and contact details, so that they can be booked for appointments.*
-- **Story Dependencies:** Blocked by `US-01` (Requires receptionist authentication context).
-
-| Task ID | Task Description | Kind | Depends on | Branch Identifier |
-| :--- | :--- | :---: | :---: | :--- |
-| **T-03.1** | Define patient database entity and migration (full name, DOB, contact details, address, active flag) | Code | T-01.1 | `feature/US-03-patient-entity` |
-| **T-03.2** | Implement patient creation service with date-of-birth format and contact detail validation | Code | T-03.1 | `feature/US-03-patient-service` |
-| **T-03.3** | Build receptionist patient registration form with input validation highlights | Code | T-03.2, T-01.3 | `feature/US-03-patient-form` |
-| **T-03.4** | Automated unit tests verifying patient validation rules (missing name, future DOB rejection) | Test — automated | T-03.2 | `feature/US-03-patient-unit-tests` |
-| **T-03.5** | Manual check of form responsive layout and error state usability | Test — manual | T-03.3 | — |
+| ID | Task | Kind | Depends on |
+| :--- | :--- | :---: | :--- |
+| **T-01.1** | User entity schema, password hashing with bcrypt, and seed data | Code | None |
+| **T-01.2** | Authentication service and session/token handler | Code | T-01.1 |
+| **T-01.3** | Role-based authorization middleware enforcing 401 and 403 status codes | Code | T-01.2 |
+| **T-01.4** | Login form interface with role-based routing | Code | T-01.2 |
+| **T-01.5** | Unit tests for bcrypt hashing and credential validation | Test — automated | T-01.2 |
+| **T-01.6** | Integration tests asserting 401 unauthenticated and 403 unauthorized access | Test — automated | T-01.3 |
+| **T-01.7** | Manual check of failed login notifications and validation feedback | Test — manual | T-01.4 |
 
 ---
 
-#### US-04: Search Existing Patient
-*As a receptionist, I want to search for registered patients by name or identification number, so that I can quickly retrieve their profiles and avoid creating duplicate records.*
-- **Story Dependencies:** Blocked by `US-03` (Cannot search patients before patient entity and records exist).
+#### US-02: As an administrator, I want to register a doctor with a specialisation, so that they can be assigned to consultations
+- **Blocked by:** US-01
 
-| Task ID | Task Description | Kind | Depends on | Branch Identifier |
-| :--- | :--- | :---: | :---: | :--- |
-| **T-04.1** | Implement repository query service for case-insensitive patient search by name or ID | Code | T-03.1 | `feature/US-04-search-query` |
-| **T-04.2** | Create search UI component with debounced query input and patient result table | Code | T-04.1 | `feature/US-04-search-ui` |
-| **T-04.3** | Automated integration tests checking search query filtering, partial matches, and empty-set responses | Test — automated | T-04.1 | `feature/US-04-search-tests` |
-| **T-04.4** | Manual check of empty-state search results and UI responsiveness under rapid keystrokes | Test — manual | T-04.2 | — |
-
----
-
-#### US-05: Schedule Appointment with Double-Booking Prevention
-*As a receptionist, I want to schedule an appointment for a patient with a designated doctor and time slot, so that patient visits are arranged without double-booking conflicts.*
-- **Story Dependencies:** Blocked by `US-02` and `US-03` (Requires both active doctors and active patients).
-
-| Task ID | Task Description | Kind | Depends on | Branch Identifier |
-| :--- | :--- | :---: | :---: | :--- |
-| **T-05.1** | Define appointment entity and migration (`patient_id`, `doctor_id`, `date`, `time`, `reason`, `status`) | Code | US-02, US-03 | `feature/US-05-appointment-entity` |
-| **T-05.2** | Implement service method to persist an appointment with default status `Scheduled` | Code | T-05.1 | `feature/US-05-create-service` |
-| **T-05.3** | Implement conflict prevention business rule: reject a second appointment for the same doctor and time slot | Code | T-05.1 | `feature/US-05-conflict-rule` |
-| **T-05.4** | Build booking form interface with patient picker, doctor selector, and datetime slot pickers | Code | T-05.2, T-05.3 | `feature/US-05-booking-form` |
-| **T-05.5** | Automated unit tests for conflict rule, including exact match, boundary times, and distinct doctors | Test — automated | T-05.3 | `feature/US-05-conflict-unit-tests` |
-| **T-05.6** | Automated end-to-end test: book a valid slot, then attempt a clashing booking and assert rejection | Test — automated | T-05.4 | `feature/US-05-clash-e2e-test` |
-| **T-05.7** | Manual check of conflict validation message wording and booking form empty states | Test — manual | T-05.4 | — |
+| ID | Task | Kind | Depends on |
+| :--- | :--- | :---: | :--- |
+| **T-02.1** | Doctor entity schema and migration (name, specialisation, availability) | Code | T-01.1 |
+| **T-02.2** | Service method to register a doctor | Code | T-02.1 |
+| **T-02.3** | Doctor registration form for administrators | Code | T-02.2, T-01.3 |
+| **T-02.4** | Unit and route authorization tests for doctor registration | Test — automated | T-02.3 |
+| **T-02.5** | Manual check of doctor form validation and specialisation picker | Test — manual | T-02.3 |
 
 ---
 
-#### US-06: Record Clinical Diagnosis and Consultation Notes
-*As a doctor, I want to record visit dates, clinical diagnoses, and consultation notes, so that an accurate and permanent medical record is preserved.*
-- **Story Dependencies:** Blocked by `US-05` (Consultations occur on scheduled appointments).
+#### US-03: As a receptionist, I want to register a new patient, so that the patient can be booked for an appointment
+- **Blocked by:** US-01
 
-| Task ID | Task Description | Kind | Depends on | Branch Identifier |
-| :--- | :--- | :---: | :---: | :--- |
-| **T-06.1** | Define medical record database entity and migration (`appointment_id`, `patient_id`, `doctor_id`, `visit_date`, `diagnosis`, `notes`) | Code | T-05.1 | `feature/US-06-record-entity` |
-| **T-06.2** | Implement clinical record creation service and transition appointment status to `Completed` | Code | T-06.1 | `feature/US-06-record-service` |
-| **T-06.3** | Build consultation recording interface accessible exclusively to the assigned doctor | Code | T-06.2, T-01.3 | `feature/US-06-record-form` |
-| **T-06.4** | Automated tests verifying only assigned doctors can create records and receptionist edits return 403 | Test — automated | T-06.2 | `feature/US-06-record-tests` |
-| **T-06.5** | Manual verification of clinical note entry formatting and appointment completion indicator | Test — manual | T-06.3 | — |
-
----
-
-#### US-07: Review Patient Medical History
-*As a doctor, I want to review previous consultation histories and clinical records of patients assigned to me, so that I can make informed diagnosis and treatment decisions.*
-- **Story Dependencies:** Blocked by `US-06` (Medical records must exist to be reviewed).
-
-| Task ID | Task Description | Kind | Depends on | Branch Identifier |
-| :--- | :--- | :---: | :---: | :--- |
-| **T-07.1** | Implement service query retrieving past consultation records filtered by patient and assigned doctor | Code | T-06.1 | `feature/US-07-history-service` |
-| **T-07.2** | Build chronological clinical history timeline view in the doctor portal | Code | T-07.1 | `feature/US-07-history-ui` |
-| **T-07.3** | Automated integration tests asserting non-medical staff and unassigned users receive 403 on history access | Test — automated | T-07.1 | `feature/US-07-history-tests` |
+| ID | Task | Kind | Depends on |
+| :--- | :--- | :---: | :--- |
+| **T-03.1** | Patient entity schema and migration (name, date of birth, contact details) | Code | T-01.1 |
+| **T-03.2** | Service method to register a patient with input validation | Code | T-03.1 |
+| **T-03.3** | Patient registration form for receptionists | Code | T-03.2, T-01.3 |
+| **T-03.4** | Unit tests verifying mandatory patient attributes and date-of-birth format | Test — automated | T-03.2 |
+| **T-03.5** | Manual verification of form layout and validation messaging | Test — manual | T-03.3 |
 
 ---
 
-#### US-08: Export Authorised Clinical Data to CSV
-*As a doctor, I want to export my authorized consultation and diagnosis records to a CSV report, so that I can analyze patient treatment trends and satisfy reporting obligations.*
-- **Story Dependencies:** Blocked by `US-06` (Requires completed consultations to export).
+#### US-04: As a receptionist, I want to search for an existing patient, so that I can view their details without duplicating records
+- **Blocked by:** US-03
 
-| Task ID | Task Description | Kind | Depends on | Branch Identifier |
-| :--- | :--- | :---: | :---: | :--- |
-| **T-08.1** | Implement CSV generation service formatting patient names, consultation dates, diagnoses, and doctor IDs | Code | T-06.1 | `feature/US-08-csv-service` |
-| **T-08.2** | Build role-protected HTTP GET endpoint and doctor UI button triggering CSV download | Code | T-08.1, T-01.3 | `feature/US-08-csv-endpoint` |
-| **T-08.3** | Automated test validating CSV headers, escaping of special characters, and non-doctor HTTP 403 refusal | Test — automated | T-08.2 | `feature/US-08-csv-tests` |
-
----
-
-#### Epic E6: Platform and Pipeline Tasks
-*Continuous Integration, Delivery, Containerization, and Observability Infrastructure.*
-- **Epic Dependencies:** Iteratively supports all application development sprints.
-
-| Task ID | Task Description | Kind | Depends on | Branch Identifier |
-| :--- | :--- | :---: | :---: | :--- |
-| **T-P.1** | Configure GitHub Actions CI workflow to run linters, build check, and unit tests on pull requests | Pipeline | None | `infra/ci-pipeline` |
-| **T-P.2** | Create production multi-stage Dockerfile and GitHub Actions CD workflow publishing images to GHCR | Pipeline | T-P.1 | `infra/cd-ghcr-publish` |
-| **T-P.3** | Set up headless Playwright test harness and integrate automated E2E execution into GitHub Actions CI | Pipeline | T-P.2, US-05 | `infra/e2e-playwright` |
-| **T-P.4** | Implement `/health` endpoint returning system uptime and database connectivity metrics | Code / Infra | None | `infra/health-observability` |
+| ID | Task | Kind | Depends on |
+| :--- | :--- | :---: | :--- |
+| **T-04.1** | Service method to search patients by name or identifier | Code | T-03.1 |
+| **T-04.2** | Patient search bar and result list interface | Code | T-04.1 |
+| **T-04.3** | Automated integration tests for patient search queries | Test — automated | T-04.1 |
+| **T-04.4** | Manual check of search empty state and query responsiveness | Test — manual | T-04.2 |
 
 ---
 
-### 6.4 Dependency Management & Cycle Elimination
+#### US-05: As a receptionist, I want to schedule an appointment, so that a patient is seen by the right doctor
+- **Blocked by:** US-02, US-03
 
-```mermaid
-flowchart TD
-    US01["US-01: Login & RBAC"] --> US02["US-02: Register Doctor"]
-    US01 --> US03["US-03: Register Patient (Anchor)"]
-    US03 --> US04["US-04: Search Patient"]
-    US03 --> US09["US-09: Edit Patient Details"]
-    US02 --> US05["US-05: Schedule Appointment (Conflict Rule)"]
-    US03 --> US05
-    US05 --> US06["US-06: Record Clinical Notes"]
-    US06 --> US07["US-07: Review Medical History"]
-    US06 --> US08["US-08: Export Clinical CSV"]
-    US01 --> US10["US-10: Manage User Accounts"]
+| ID | Task | Kind | Depends on |
+| :--- | :--- | :---: | :--- |
+| **T-05.1** | Appointment entity and migration (patient, doctor, datetime, reason, status) | Code | US-02, US-03 |
+| **T-05.2** | Service method to create an appointment | Code | T-05.1 |
+| **T-05.3** | Conflict rule: reject a second appointment for the same doctor and slot | Code | T-05.1 |
+| **T-05.4** | Booking form with patient and doctor pickers | Code | T-05.2 |
+| **T-05.5** | Unit tests for the conflict rule, including the boundary cases | Test — automated | T-05.3 |
+| **T-05.6** | End-to-end test: book, then attempt a clashing booking and expect refusal | Test — automated | T-05.4 |
+| **T-05.7** | Manual check of validation wording and the empty-state screen | Test — manual | T-05.4 |
 
-    subgraph Platform_Deliverables [Platform & DevOps Pipeline]
-        TP1["T-P.1: CI Workflow"] --> TP2["T-P.2: CD & GHCR Publish"]
-        TP2 --> TP3["T-P.3: Playwright E2E Suite"]
-    end
-```
+---
 
-- **Between Stories (Sprint Order):** Story dependencies dictate which sprint an item can be planned into. For example, `US-05` (Appointment Booking) cannot enter a sprint before `US-02` (Doctors) and `US-03` (Patients) are completed.
-- **Between Tasks (Branch Order):** Task dependencies govern branch sequencing. An end-to-end test branch (`T-05.6`) cannot be branched before the booking interface (`T-05.4`) is merged. Within each story, the canonical sequence is: Entity & Migration $\rightarrow$ Service Method $\rightarrow$ UI Form $\rightarrow$ Automated Tests.
-- **Cycle Elimination:** Cycles between authentication and user entities are prevented by splitting the minimal user schema (`T-01.1`) away from full user account administration (`US-10`). This ensures `US-01` unblocks the entire application without depending on administrative interfaces.
+#### US-06: As a doctor, I want to record diagnosis and visit notes, so that consultation outcomes are documented
+- **Blocked by:** US-05
+
+| ID | Task | Kind | Depends on |
+| :--- | :--- | :---: | :--- |
+| **T-06.1** | Medical record entity schema and migration (appointment, visit date, diagnosis, notes) | Code | T-05.1 |
+| **T-06.2** | Service method to record consultation notes and mark appointment completed | Code | T-06.1 |
+| **T-06.3** | Doctor consultation entry form | Code | T-06.2, T-01.3 |
+| **T-06.4** | Unit and permission tests verifying only assigned doctors can add notes | Test — automated | T-06.2 |
+| **T-06.5** | Manual verification of clinical note entry screen | Test — manual | T-06.3 |
+
+---
+
+#### US-07: As a doctor, I want to read a patient's previous records, so that I can review their clinical history
+- **Blocked by:** US-06
+
+| ID | Task | Kind | Depends on |
+| :--- | :--- | :---: | :--- |
+| **T-07.1** | Service method retrieving previous consultation records for authorized doctor | Code | T-06.1 |
+| **T-07.2** | Clinical history view interface in doctor portal | Code | T-07.1 |
+| **T-07.3** | Automated permission tests checking non-medical staff receive 403 on records | Test — automated | T-07.1 |
+
+---
+
+#### US-08: As a doctor, I want to export my authorised data to CSV, so that I have a portable clinical summary
+- **Blocked by:** US-06
+
+| ID | Task | Kind | Depends on |
+| :--- | :--- | :---: | :--- |
+| **T-08.1** | Service method generating CSV format from consultation data | Code | T-06.1 |
+| **T-08.2** | Role-protected CSV download route and interface trigger | Code | T-08.1, T-01.3 |
+| **T-08.3** | Automated tests asserting CSV header correctness and unauthorized role refusal | Test — automated | T-08.2 |
+
+---
+
+#### E6 Platform and Pipeline Tasks
+- **Blocked by:** None
+
+| ID | Task | Kind | Depends on |
+| :--- | :--- | :---: | :--- |
+| **T-P.1** | Continuous Integration workflow on GitHub Actions (linting, build, unit tests) | Pipeline | None |
+| **T-P.2** | Multi-stage Dockerfile and GitHub Actions workflow publishing image to GHCR | Pipeline | T-P.1 |
+| **T-P.3** | Playwright test setup integrated into GitHub Actions CI | Pipeline | T-P.2, US-05 |
+| **T-P.4** | Application health endpoint (`/health`) and basic metric logging | Code | None |
+
+---
+
+### 6.3 Dependencies
+
+- **Between stories (decides sprint order):** `US-05` is blocked by `US-02` and `US-03` — you cannot book an appointment before doctors and patients exist. Nearly everything is blocked by `US-01`, because nothing is reachable before login.
+- **Between tasks (decides branch order):** `T-05.6` is blocked by `T-05.4` — you cannot write an end-to-end test for a form that does not exist. Within a story, the order is model, then service, then interface, then tests.
+- **Cycle prevention:** If A is blocked by B and B is blocked by A, split one. Authentication and the user model are decoupled so the base user entity (`T-01.1`) unblocks the app without waiting for user administration (`US-10`).
 
 ---
 
 ## 7. Estimation
 
-### 7.1 Why Story Points and Not Hours
+### 7.1 Story Points and Why Not Hours
 
-Story points quantify the **relative effort and complexity** of delivering a story compared to an established baseline, whereas hours represent an absolute commitment to a calendar timetable outside the developer's sole control.
+Points compare stories to each other. Hours commit to a calendar you do not control.
 
-In this project, estimating in relative points rather than hours is essential for five reasons:
-1. **Amount of Work:** Reflects the sheer volume of code, migrations, views, and test suites required.
-2. **Technical Complexity:** Accounts for non-trivial logic, such as relational uniqueness checks, concurrency race conditions, and role-based route guard trees.
-3. **Uncertainty:** Captures unfamiliar tools and frameworks. Establishing container builds and CI self-hosted runners carries higher uncertainty than writing a standard database query.
-4. **Dependencies:** Blocked work carries synchronization and integration risk even when individual tasks are straightforward.
-5. **Testing Effort:** A strict business rule with multiple boundary cases (such as double-booking prevention) demands significantly greater verification effort than a static display view.
+Five factors drive story point values:
+1. **Amount of work:** Number of tasks, files, and volume of implementation.
+2. **Technical complexity:** Difficult logic, relational queries, concurrency or security checks.
+3. **Uncertainty:** New technologies, tools, or libraries not used before.
+4. **Dependencies:** Blocked work carrying coordination risk.
+5. **Testing effort:** Business rules with multiple boundary cases versus simple forms.
 
-> **Maintaining Velocity in Solo Projects:**  
-> When working alone while balancing academic workloads across multiple subjects, available hours fluctuate wildly from week to week. Story points remain invariant: a 5-point story represents the same relative complexity in an intense academic week as in a light week. Points allow velocity to be measured empirically across sprints rather than relying on unreliable hour projections.
-
----
-
-### 7.2 The Estimation Scale
-
-Estimates adhere to a modified Fibonacci sequence with concrete, unambiguous definitions:
-
-| Points | Scale Category | Explicit Meaning & Technical Criteria |
-| :---: | :--- | :--- |
-| **1** | **Trivial** | Completely understood; no new technologies; one or two files touched; negligible test requirements (e.g., status enum update). |
-| **2** | **Small** | Routine implementation on an existing entity or pattern; simple form field or read-only list view; standard unit test. |
-| **3** | **Standard (Anchor)** | Several tasks spanning multiple files; clear business validation; unit and integration test coverage. **The baseline anchor lives here.** |
-| **5** | **Substantial** | Multi-layer functionality; critical business rule requiring thorough boundary testing; multiple database relations. |
-| **8** | **Large / Unfamiliar** | High technical uncertainty; cross-cutting security, session management, or global authentication architecture; substantial research required. |
-| **13** | **Too Big (Epic)** | Not an estimate — a direct signal that the story must be decomposed into smaller vertical slices before sprint planning. |
+When working alone alongside other courses, available hours fluctuate wildly, but relative points remain stable: a 5-point story represents the same complexity regardless of the week, keeping velocity measurable.
 
 ---
 
-### 7.3 The Baseline Anchor Story
+### 7.2 The Scale and Anchor
 
-- **Declared Anchor Story:** **`US-03: Register a new patient` is established as 3 Story Points**.
-- **Anchor Rationale:** Registering a patient is standard, representative web application development. It requires an entity schema, input validation (mandatory fields, date of birth format), a form interface, and automated validation tests.
-- Every other backlog item is estimated by asking: *"Is this feature larger, smaller, or comparable in effort and uncertainty to registering a new patient?"*
+The project uses the following scale:
+- **1 (Trivial):** Understood completely, no new technology, one or two files, barely any test.
+- **2 (Small):** Routine work on something that already exists. A form field, a list view.
+- **3 (Standard):** Several tasks, a few tests, nothing you have not done before. **The anchor lives here.**
+- **5 (Substantial):** Multiple layers, a business rule worth testing properly, some fiddly cases.
+- **8 (Large or unfamiliar):** New technology, security, or something you will have to read about first.
+- **13 (Too big):** Not an estimate — a signal. Split it before it enters a sprint.
+
+**The Anchor Story:**  
+`US-03: Register a new patient` is declared as **3 points**. All other estimates answer the question: *"Is this bigger or smaller than registering a patient?"*
 
 ---
 
-### 7.4 Backlog Estimation Table
+### 7.3 Backlog Estimates
 
-The following table provides the point allocation and driving rationale for all 21 product backlog user stories and core DevOps pipeline deliverables:
-
-| ID | Backlog Item / Capability | Points | Driving Rationale |
+| ID | User story / Deliverable | Points | What drives the number |
 | :---: | :--- | :---: | :--- |
-| **US-01** | Staff Login and Role-Based Redirection | **8** | High uncertainty, security-critical, bcrypt hashing, session state, and global route authorization guards. |
-| **US-02** | Register Doctor with Specialisation | **2** | Routine create form and entity persistence; simpler than patient registration due to fewer validation constraints. |
-| **US-03** | Register New Patient *(Anchor)* | **3** | **The Baseline Anchor.** Multi-field validation, schema migration, form interface, and automated test coverage. |
-| **US-04** | Search Existing Patient | **2** | Single database query filter and tabular result list; minimal business logic complexity. |
-| **US-05** | Schedule Appointment & Conflict Prevention | **5** | Two foreign key relationships, datetime coordination, and a strict no-double-booking business rule with multiple boundary test cases. |
-| **US-06** | Record Diagnosis and Visit Notes | **3** | Comparable to registering a patient: data persistence, form input, and strict author role verification. |
-| **US-07** | Review Patient Medical History | **2** | Read-only consultation history query scoped to assigned doctor; straightforward list rendering. |
-| **US-08** | Export Clinical Data to CSV | **3** | Straightforward string/stream formatting, but requires strict role authorization filtering to prevent unauthorized data exposure. |
-| **US-09** | Edit Patient Details | **2** | Routine update form pre-populated with existing data; reuses validation logic established in US-03. |
-| **US-10** | Manage User Accounts and Assign Roles | **5** | Re-enters the authentication and credential domain; requires role reassignment logic, credential updates, and administrator privilege checks. |
-| **US-11** | Doctor View Scheduled Appointment Queue | **2** | Simple filtered appointment query restricted to the authenticated doctor's identifier and current date. |
-| **US-12** | Doctor Cancel / Reschedule Own Appointment | **2** | Appointment status modification restricted to the doctor's own calendar roster. |
-| **US-13** | Receptionist Reschedule or Cancel Appointment | **2** | Status transition to `Cancelled` or updating time slot with conflict rule verification. |
-| **US-14** | Track Appointment Status Lifecycle | **1** | Simple enum transition (`Scheduled` $\rightarrow$ `Completed` / `Cancelled`) with validation. |
-| **US-15** | Update Doctor Information & Availability | **2** | Form update modifying clinical availability windows and contact details on an existing record. |
-| **US-16** | Deactivate Doctor Record | **2** | Soft-deactivation flag toggle preserving historical consultation relations. |
-| **US-17** | Deactivate Patient Record | **2** | Soft-deactivation flag toggle preserving historical appointment and clinical notes. |
-| **US-18** | Deactivate User Accounts | **2** | Account active flag toggle immediately invalidating active session tokens. |
-| **US-19** | *(Invented)* Daily Schedule Filtering | **3** | Dynamic multi-parameter filtering across doctor roster, specialisation, and schedule date. |
-| **US-20** | *(Invented)* Diagnosis Search & Filter | **3** | Text search and date-range filtering across historical patient clinical consultation entries. |
-| **US-21** | *(Invented)* User Security Audit Trail | **3** | Audit log entity, automated logging trigger on role modifications, and read-only admin log viewer. |
-| **CI-Setup** | GitHub Actions CI Workflow Setup | **5** | High uncertainty; containerised runner environment, linting tools, test execution orchestration, and pull request checks. |
-| **CD-Publish** | Dockerfile & GHCR Container Publishing | **3** | Multi-stage image build optimization, GHCR authentication, tagging strategy, and publish trigger. |
-| **E2E-Tests** | Playwright Pipeline Automation | **3** | Headless browser installation, web server lifecycle management in CI, and test reporting. |
-| **Metrics** | Health Endpoint & Observability Setup | **2** | Lightweight `/health` probe implementation and structured system status logging. |
-
-> **Key Architectural Insight:**  
-> The single most expensive functional story in the backlog is `US-01` (8 points), despite having the smallest visual UI footprint. This reflects the dominating role of **uncertainty and security complexity** in relative estimation.
+| **US-01** | Log in and reach only my permitted functionality | **8** | Security, sessions, role enforcement everywhere. Uncertainty, not volume. |
+| **US-02** | Register a doctor with a specialisation | **2** | Routine create form on a new but simple entity. |
+| **US-03** | Register a new patient *(Anchor)* | **3** | The anchor. Several fields, validation, one test task. |
+| **US-04** | Search for an existing patient | **2** | One query, one list view, little to get wrong. |
+| **US-05** | Schedule an appointment without double-booking | **5** | Two foreign keys and a business rule with real boundary cases. |
+| **US-06** | Record diagnosis and visit notes | **3** | Comparable to registering a patient, with an authorisation check. |
+| **US-07** | Read a patient's previous records | **2** | Straightforward query and read view restricted to assigned doctor. |
+| **US-08** | Export authorised data to CSV | **3** | Simple output, but the authorisation filter is easy to get wrong. |
+| **US-09** | Edit patient contact details | **2** | Routine form update on an existing entity. |
+| **US-10** | Manage user accounts and assign roles | **5** | Depends on US-01 and touches the permission model again. |
+| **US-11** | View my scheduled appointments | **2** | Filtered query on existing appointments. |
+| **US-12** | Doctor cancel or update appointment | **2** | Status update restricted to doctor's own calendar. |
+| **US-13** | Receptionist update or cancel appointment | **2** | Rescheduling with conflict rule check. |
+| **US-14** | Track appointment status | **1** | Simple status flag transition. |
+| **US-15** | Update doctor details | **2** | Routine update form on existing doctor entity. |
+| **US-16** | Deactivate an unavailable doctor | **2** | Soft deactivation flag update. |
+| **US-17** | Deactivate a patient record | **2** | Soft deactivation preserving historical appointments. |
+| **US-18** | Deactivate a user account | **2** | Active status toggle invalidating future logins. |
+| **US-19** | Daily schedule filtering *(Invented)* | **3** | Multi-attribute search by doctor and specialisation. |
+| **US-20** | Diagnosis search and filter *(Invented)* | **3** | Query filter on patient consultation notes. |
+| **US-21** | User security audit trail *(Invented)* | **3** | Audit event logging and read-only administrator log view. |
+| **CI setup** | Continuous Integration pipeline | **5** | Workflow setup, headless test runners, PR checks. High uncertainty. |
+| **CD** | Container build and GHCR publishing | **3** | Dockerfile creation, registry authentication and tagging. |
+| **E2E** | Playwright test automation | **3** | Headless browser execution wired into CI. |
+| **Metrics** | Health endpoint and system metrics | **2** | Simple health check route and status metrics. |
 
 ---
 
 ## 8. Sprint backlogs
 
-### 8.1 Velocity Baseline and Capacity Planning
+### 8.1 Velocity and Planning
 
-- **Initial Velocity Hypothesis (Sprint 1):** With no prior team velocity data, Sprint 1 capacity is planned conservatively at **12 to 15 story points**, reflecting roughly 20–25 hours of dedicated engineering across the fortnight.
-- **Empirical Adjustment:** At each Sprint Review, actual completed points (satisfying the Definition of Done 100%) will be recorded. Subsequent sprint backlogs will be dynamically re-scoped based on demonstrated empirical velocity rather than optimistic projections.
-- **Accounting for DevOps Pipeline Effort:** DevOps infrastructure and pipeline tasks carry story points and consume sprint capacity. Allocating zero points to CI/CD guarantees missed sprint commitments by week four.
+Sprint 1 capacity is an opening estimate of **12 to 15 points**. After Sprint 1, capacity is a measurement based on what actually finished at the review, not optimism. Pipeline tasks carry points and consume sprint capacity alongside application features.
 
 ---
 
-### 8.2 Four-Sprint Backlog Allocation
+### 8.2 Four-Sprint Plan
 
-```mermaid
-gantt
-    title Semester Sprint Cadence & Deliverables
-    dateFormat  YYYY-MM-DD
-    section Sprint 1
-    Walking Skeleton (US-01, US-02, CI-Setup) :2026-10-12, 14d
-    section Sprint 2
-    Core Records (US-03, US-04, US-09, US-14, CD-Publish) :2026-10-26, 14d
-    section Sprint 3
-    Appointments & Notes (US-05, US-06, US-07) :2026-11-09, 14d
-    section Sprint 4
-    Harden & Observe (US-08, US-10, E2E-Tests, Metrics) :2026-11-23, 14d
-```
-
-#### Sprint 1: Walking Skeleton
-- **Sprint Goal:** *Deliver a working vertical walking skeleton with secure role-based login and an automated CI pipeline validating builds and tests on every pull request.*
-- **Scope & Allocated Items:**
-  - `US-01` — Staff Authentication and Role Routing (8 pts)
-  - `US-02` — Register Doctor with Specialisation (2 pts)
-  - `CI-Setup` — GitHub Actions CI pipeline configuration (5 pts)
-- **Total Points:** **15 pts**
-- **Dependency Status:** Unblocked. Establishes the foundational user model, doctor registry, and automated CI quality gate.
+| Sprint | Goal | Stories | Pts |
+| :---: | :--- | :--- | :---: |
+| **1** | Walking skeleton: login works, pipeline builds and publishes | US-01, US-02, CI setup | **15** |
+| **2** | Patient and doctor records end to end, container published | US-03, US-04, US-09, CD | **12** |
+| **3** | Appointments and clinical notes | US-05, US-06, US-07 | **10** |
+| **4** | Export, user admin, tests and monitoring | US-08, US-10, E2E, metrics | **13** |
 
 ---
 
-#### Sprint 2: Core Records
-- **Sprint Goal:** *Deliver complete patient and doctor record management end-to-end with automated container image publishing to GitHub Container Registry.*
-- **Scope & Allocated Items:**
-  - `US-03` — Register New Patient [Anchor] (3 pts)
-  - `US-04` — Search Existing Patient (2 pts)
-  - `US-09` — Edit Patient Details (2 pts)
-  - `US-14` — Track Appointment Status Lifecycle (1 pt)
-  - `US-17` — Deactivate Patient Record (2 pts)
-  - `CD-Publish` — Multi-stage Dockerfile and automated GHCR publication workflow (3 pts)
-- **Total Points:** **13 pts**
-- **Dependency Status:** Fully unblocked by Sprint 1 (builds on user identity and database schema).
+### 8.3 Dependency Verification
 
----
-
-#### Sprint 3: Appointments and Clinical Notes
-- **Sprint Goal:** *Implement conflict-free appointment scheduling with clinical consultation notes recording and patient history review.*
-- **Scope & Allocated Items:**
-  - `US-05` — Schedule Appointment with Double-Booking Prevention (5 pts)
-  - `US-06` — Record Clinical Diagnosis and Consultation Notes (3 pts)
-  - `US-07` — Review Patient Medical History (2 pts)
-- **Total Points:** **10 pts**
-- **Dependency Status:** Fully unblocked. `US-05` depends strictly on active doctors (Sprint 1) and registered patients (Sprint 2). `US-06` and `US-07` build directly on scheduled appointments.
-
----
-
-#### Sprint 4: Harden and Observe
-- **Sprint Goal:** *Deliver clinical CSV export, administrative user management, automated Playwright E2E verification in CI, and runtime health observability.*
-- **Scope & Allocated Items:**
-  - `US-08` — Export Authorised Clinical Data to CSV (3 pts)
-  - `US-10` — Manage User Accounts and Assign Roles (5 pts)
-  - `E2E-Tests` — Playwright automated browser test suite integrated into CI workflow (3 pts)
-  - `Metrics` — `/health` endpoint and runtime operational metrics logging (2 pts)
-- **Total Points:** **13 pts**
-- **Dependency Status:** Fully unblocked. Consultation data is present for export (`US-08`), and the appointment workflow is mature for end-to-end testing (`E2E-Tests`).
-
----
-
-### 8.3 Sprint Allocation Summary & Dependency Validation
-
-| Sprint | Primary Focus | Included Items | Points Total | Dependency Check |
-| :---: | :--- | :--- | :---: | :---: |
-| **Sprint 1** | Walking Skeleton & CI Pipeline | `US-01`, `US-02`, `CI-Setup` | **15** | None (Root entities) |
-| **Sprint 2** | Core Records & Container Registry | `US-03`, `US-04`, `US-09`, `US-14`, `US-17`, `CD-Publish` | **13** | Blocked only by S1 |
-| **Sprint 3** | Appointments, Conflict Rule & Notes | `US-05`, `US-06`, `US-07` | **10** | Blocked only by S1 & S2 |
-| **Sprint 4** | E2E Testing, Export, Admin & Monitoring | `US-08`, `US-10`, `E2E-Tests`, `Metrics` | **13** | Blocked only by S1–S3 |
-
-> **Verification:** Every item in every sprint has its prerequisite dependencies satisfied in an earlier sprint or earlier task. No circular dependencies exist across the four sprint boundaries.
+Every sprint strictly respects dependency lines:
+- Sprint 1 delivers authentication (`US-01`) and the doctor entity (`US-02`), unblocking core workflows.
+- Sprint 2 establishes patient management (`US-03`, `US-04`, `US-09`), unblocking appointment scheduling.
+- Sprint 3 delivers appointments with the conflict rule (`US-05`), clinical notes (`US-06`), and history access (`US-07`).
+- Sprint 4 delivers reporting (`US-08`), user administration (`US-10`), and automated E2E tests and monitoring.
+No story is scheduled in a sprint before its prerequisites are met.
